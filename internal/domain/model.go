@@ -609,6 +609,13 @@ func (p InspectionPlan) Validate() error {
 	if p.Report != nil && p.Report.PlanID != p.ID {
 		return fmt.Errorf("%w：报告归属无效", ErrSnapshotInvalid)
 	}
+	if p.Report != nil {
+		for _, result := range p.Report.SiteResults {
+			if !seen[result.SiteID] {
+				return fmt.Errorf("%w：报告结果包含计划中不存在的点位", ErrSnapshotInvalid)
+			}
+		}
+	}
 	if p.Report != nil && (p.Report.SeverityCounts != nil || p.Report.ReviewCounts != nil) {
 		if err := validateReportCounts(*p.Report); err != nil {
 			return err
