@@ -338,7 +338,7 @@ func (p *InspectionPlan) ReviewObservations(observationIDs []string, decision Re
 	}
 
 	seen := make(map[string]struct{}, len(observationIDs))
-	reviewedAt = reviewedAt.UTC()
+	targets := make([]*Observation, 0, len(observationIDs))
 	for _, observationID := range observationIDs {
 		observationID = strings.TrimSpace(observationID)
 		if observationID == "" {
@@ -359,12 +359,7 @@ func (p *InspectionPlan) ReviewObservations(observationIDs []string, decision Re
 				if observation.ReviewStatus != ReviewPending {
 					return ErrAlreadyReviewed
 				}
-				at := reviewedAt
-				observation.ReviewStatus = decision
-				observation.Reviewer = reviewer
-				observation.ReviewNote = note
-				observation.ReviewedAt = &at
-				observation.ReviewHistory = append(observation.ReviewHistory, ReviewEvent{Event: ReviewEventType(decision), At: at, Operator: reviewer, Note: note})
+				targets = append(targets, observation)
 				found = true
 				break
 			}
@@ -375,6 +370,14 @@ func (p *InspectionPlan) ReviewObservations(observationIDs []string, decision Re
 		if !found {
 			return ErrObservationNotFound
 		}
+	}
+	at := reviewedAt.UTC()
+	for _, observation := range targets {
+		observation.ReviewStatus = decision
+		observation.Reviewer = reviewer
+		observation.ReviewNote = note
+		observation.ReviewedAt = &at
+		observation.ReviewHistory = append(observation.ReviewHistory, ReviewEvent{Event: ReviewEventType(decision), At: at, Operator: reviewer, Note: note})
 	}
 	p.Version++
 	return nil
