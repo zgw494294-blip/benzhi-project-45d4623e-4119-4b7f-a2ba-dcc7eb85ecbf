@@ -565,6 +565,45 @@ func validateReportCounts(report InspectionReport) error {
 	return nil
 }
 
+// validateReportConsistency 重新依据计划中的观测明细计算异常等级统计、复核统计与异常总数，
+// 并与报告内存储的汇总值比对。即使报告校验和已被随统计值一起篡改后重新计算，
+// 只要汇总与观测明细不一致就必须判定快照无效。
+func validateReportConsistency(plan InspectionPlan) error {
+	if plan.Report == nil {
+		return nil
+	}
+	expectedSeverity := newSeverityCounts()
+	expectedReview := newReviewCounts()
+	exceptionCount := 0
+	for _, site := range plan.Sites {
+		for _, observation := range site.Observations {
+			expectedSeverity[observation.Severity]++
+			expectedReview[observation.ReviewStatus]++
+			if observation.Severity != SeverityNormal {
+				exceptionCount++
+			}
+		}
+	}
+	if plan.Report.ExceptionCount != exceptionCount {
+		return fmt.Errorf("%w：报告异常总数与观测明细不一致", ErrSnapshotInvalid)
+	}
+	if len(plan.Report.SeverityCounts) != 0 {
+		for severity, count := range expectedSeverity {
+			if stored, exists := plan.Report.SeverityCounts[severity]; !exists || stored != count {
+				return fmt.Errorf("%w：报告异常等级统计与观测明细不一致", ErrSnapshotInvalid)
+			}
+		}
+	}
+	if len(plan.Report.ReviewCounts) != 0 {
+		for status, count := range expectedReview {
+			if stored, exists := plan.Report.ReviewCounts[status]; !exists || stored != count {
+				return fmt.Errorf("%w：报告复核统计与观测明细不一致", ErrSnapshotInvalid)
+			}
+		}
+	}
+	return nil
+}
+
 func (p InspectionPlan) Validate() error {
 	if p.ID == "" || p.Name == "" || p.Area == "" || p.ScheduledDate == "" || p.Version < 1 || p.CreatedAt.IsZero() {
 		return fmt.Errorf("%w：计划快照缺少必填字段", ErrSnapshotInvalid)
@@ -613,6 +652,9 @@ func (p InspectionPlan) Validate() error {
 		if err := validateReportCounts(*p.Report); err != nil {
 			return err
 		}
+	}
+	if err := validateReportConsistency(p); err != nil {
+		return err
 	}
 	if p.Report != nil && p.Report.Checksum != checksumReport(*p.Report) {
 		return fmt.Errorf("%w：报告校验值无效", ErrSnapshotInvalid)
