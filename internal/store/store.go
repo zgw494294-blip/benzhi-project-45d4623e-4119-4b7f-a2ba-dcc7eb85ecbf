@@ -89,7 +89,11 @@ func (s *FileStore) Snapshot(ctx context.Context) (Snapshot, error) {
 	if !s.loaded {
 		return Snapshot{}, fmt.Errorf("%w：数据快照尚未加载", domain.ErrSnapshotInvalid)
 	}
-	return cloneSnapshot(s.snapshot), nil
+	snapshot := cloneSnapshot(s.snapshot)
+	if err := contextErr(ctx); err != nil {
+		return Snapshot{}, err
+	}
+	return snapshot, nil
 }
 
 func (s *FileStore) Create(ctx context.Context, plan domain.InspectionPlan) error {

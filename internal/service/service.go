@@ -204,8 +204,14 @@ func (s *Service) ListPlans(ctx context.Context, filter Filter) ([]domain.Inspec
 	if err != nil {
 		return nil, err
 	}
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	result := make([]domain.InspectionPlan, 0, len(snapshot.Plans))
 	for _, plan := range snapshot.Plans {
+		if err := checkContext(ctx); err != nil {
+			return nil, err
+		}
 		if filter.Date != "" && plan.ScheduledDate != filter.Date {
 			continue
 		}
@@ -328,6 +334,9 @@ func (s *Service) GetReport(ctx context.Context, planID string) (domain.Inspecti
 }
 
 func (s *Service) ListObservations(ctx context.Context, filter Filter) ([]ObservationRecord, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	filter = normalizeFilter(filter)
 	if err := filter.validate(); err != nil {
 		return nil, err
@@ -338,9 +347,15 @@ func (s *Service) ListObservations(ctx context.Context, filter Filter) ([]Observ
 	if err != nil {
 		return nil, err
 	}
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	result := make([]ObservationRecord, 0)
 	query := strings.ToLower(strings.TrimSpace(filter.Query))
 	for _, plan := range plans {
+		if err := checkContext(ctx); err != nil {
+			return nil, err
+		}
 		for _, site := range plan.Sites {
 			if filter.Category != "" && strings.ToLower(site.Category) != strings.ToLower(strings.TrimSpace(filter.Category)) {
 				continue
@@ -363,8 +378,14 @@ func (s *Service) ListObservations(ctx context.Context, filter Filter) ([]Observ
 }
 
 func (s *Service) ExportObservations(ctx context.Context, filter Filter) ([]ObservationExportRow, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	observations, err := s.ListObservations(ctx, filter)
 	if err != nil {
+		return nil, err
+	}
+	if err := checkContext(ctx); err != nil {
 		return nil, err
 	}
 	rows := make([]ObservationExportRow, len(observations))
