@@ -598,8 +598,13 @@ func (p InspectionPlan) Validate() error {
 			}
 		}
 	}
-	for _, id := range p.SiteIDs {
-		if !seen[id] {
+	siteIDSeen := make(map[string]bool, len(p.SiteIDs))
+	for i, id := range p.SiteIDs {
+		if id == "" || siteIDSeen[id] {
+			return fmt.Errorf("%w：计划点位索引无效", ErrSnapshotInvalid)
+		}
+		siteIDSeen[id] = true
+		if ordered[i].ID != id {
 			return fmt.Errorf("%w：计划点位索引无效", ErrSnapshotInvalid)
 		}
 	}
