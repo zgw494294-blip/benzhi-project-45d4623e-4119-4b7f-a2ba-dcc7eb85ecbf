@@ -259,6 +259,9 @@ func (p *InspectionPlan) AppendObservation(observation Observation) error {
 	}
 	for i := range p.Sites {
 		for _, prior := range p.Sites[i].Observations {
+			if observation.ID == prior.ID {
+				return fmt.Errorf("%w：观测标识重复", ErrInvalidInput)
+			}
 			if observation.IdempotencyKey != "" && prior.IdempotencyKey == observation.IdempotencyKey {
 				if prior.SiteID == observation.SiteID && prior.Value == observation.Value && prior.Note == observation.Note {
 					return nil
@@ -576,6 +579,7 @@ func (p InspectionPlan) Validate() error {
 		return fmt.Errorf("%w：计划点位集合无效", ErrSnapshotInvalid)
 	}
 	seen := make(map[string]bool, len(p.Sites))
+	seenObservations := make(map[string]bool)
 	ordered := append([]InspectionSite(nil), p.Sites...)
 	sort.Slice(ordered, func(i, j int) bool { return ordered[i].Sequence < ordered[j].Sequence })
 	for i, site := range ordered {
@@ -590,6 +594,10 @@ func (p InspectionPlan) Validate() error {
 			if observation.SiteID != site.ID {
 				return fmt.Errorf("%w：观测记录归属无效", ErrSnapshotInvalid)
 			}
+			if observation.ID == "" || seenObservations[observation.ID] {
+				return fmt.Errorf("%w：观测标识重复", ErrSnapshotInvalid)
+			}
+			seenObservations[observation.ID] = true
 			if err := validateObservation(observation); err != nil {
 				return err
 			}
