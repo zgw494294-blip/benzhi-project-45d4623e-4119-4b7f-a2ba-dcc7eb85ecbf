@@ -229,10 +229,22 @@ func validateSnapshot(snapshot Snapshot) error {
 }
 
 func cloneSnapshot(snapshot Snapshot) Snapshot {
+	if snapshot.Plans == nil {
+		return snapshot
+	}
+	sourcePlans := snapshot.Plans
+	snapshot.Plans = make([]domain.InspectionPlan, len(snapshot.Plans))
+	for i, plan := range sourcePlans {
+		snapshot.Plans[i] = clonePlan(plan)
+	}
 	return snapshot
 }
 
 func clonePlan(plan domain.InspectionPlan) domain.InspectionPlan {
+	if plan.ClosedAt != nil {
+		closedAt := *plan.ClosedAt
+		plan.ClosedAt = &closedAt
+	}
 	plan.SiteIDs = append([]string(nil), plan.SiteIDs...)
 	sourceSites := plan.Sites
 	plan.Sites = make([]domain.InspectionSite, len(sourceSites))
@@ -241,6 +253,10 @@ func clonePlan(plan domain.InspectionPlan) domain.InspectionPlan {
 		plan.Sites[i].Observations = make([]domain.Observation, len(site.Observations))
 		for observationIndex, observation := range site.Observations {
 			plan.Sites[i].Observations[observationIndex] = observation
+			if observation.ReviewedAt != nil {
+				reviewedAt := *observation.ReviewedAt
+				plan.Sites[i].Observations[observationIndex].ReviewedAt = &reviewedAt
+			}
 			if observation.ReviewHistory != nil {
 				plan.Sites[i].Observations[observationIndex].ReviewHistory = append([]domain.ReviewEvent{}, observation.ReviewHistory...)
 			}
@@ -254,6 +270,10 @@ func clonePlan(plan domain.InspectionPlan) domain.InspectionPlan {
 		for i := range report.SiteResults {
 			if plan.Report.SiteResults[i].Observation != nil {
 				observation := *plan.Report.SiteResults[i].Observation
+				if observation.ReviewedAt != nil {
+					reviewedAt := *observation.ReviewedAt
+					observation.ReviewedAt = &reviewedAt
+				}
 				if observation.ReviewHistory != nil {
 					observation.ReviewHistory = append([]domain.ReviewEvent{}, observation.ReviewHistory...)
 				}
