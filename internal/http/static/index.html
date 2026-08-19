@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17232b">
+  <title>社区设施巡检闭环台</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="rail" aria-label="工作台导航">
+      <div class="brand-lockup">
+        <div class="brand-mark">巡</div>
+        <div>
+          <strong>闭环台</strong>
+          <span>社区设施运营</span>
+        </div>
+      </div>
+      <div class="rail-rule"></div>
+      <div class="rail-label">当前工作区</div>
+      <div class="rail-context">华宁街道<br><b>设施巡检组</b></div>
+      <nav class="rail-nav">
+        <a class="nav-item active" href="#plans">计划台账</a>
+        <a class="nav-item" href="#detail">现场记录</a>
+        <a class="nav-item" href="#report">巡检报告</a>
+      </nav>
+      <div class="rail-footer">
+        <span class="status-dot"></span>
+        <span>本地数据已连接</span>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="breadcrumb"><span>设施运营</span><b>/</b><strong>巡检闭环台</strong></div>
+        <div class="topbar-actions">
+          <span id="today-label"></span>
+          <button class="button button-primary" id="new-plan-button" type="button">＋ 新建计划</button>
+        </div>
+      </header>
+
+      <section class="hero-strip" aria-labelledby="page-title">
+        <div class="hero-copy">
+          <p class="eyebrow">DAILY FIELD CONTROL · 2026</p>
+          <h1 id="page-title">社区设施巡检<br><em>闭环台</em></h1>
+          <p class="hero-meta">按计划推进现场记录，让每一项异常都有复核结果。</p>
+        </div>
+        <div class="hero-metrics" aria-label="巡检概览">
+          <div class="metric metric-dark"><span>进行中计划</span><strong id="active-count">—</strong><small>当前队列</small></div>
+          <div class="metric metric-light"><span>待复核异常</span><strong id="review-count">—</strong><small>需要主管处理</small></div>
+          <div class="metric metric-accent"><span>已关闭计划</span><strong id="closed-count">—</strong><small>已生成报告</small></div>
+        </div>
+      </section>
+
+      <section class="workspace-grid" id="plans">
+        <div class="plans-panel panel-surface">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">01 / PLAN REGISTER</p>
+              <h2>计划台账</h2>
+            </div>
+            <div class="section-heading-tools"><span class="record-count" id="plan-count">0 条</span><button class="button button-outline button-small" id="export-observations" type="button">导出观测</button></div>
+          </div>
+          <div class="filters" aria-label="计划筛选">
+            <label class="filter-search"><span>搜索</span><input id="query-filter" type="search" placeholder="计划、区域或点位"></label>
+            <label><span>日期</span><input id="date-filter" type="date"></label>
+            <label><span>起始日期</span><input id="date-from-filter" type="date"></label>
+            <label><span>结束日期</span><input id="date-to-filter" type="date"></label>
+            <label><span>类别</span><select id="category-filter"><option value="">全部类别</option></select></label>
+            <label><span>状态</span><select id="status-filter"><option value="">全部状态</option><option value="active">进行中</option><option value="closed">已关闭</option></select></label>
+            <label><span>异常等级</span><select id="severity-filter"><option value="">全部等级</option><option value="normal">正常</option><option value="minor">轻微</option><option value="major">较重</option><option value="critical">严重</option></select></label>
+            <label><span>复核状态</span><select id="review-status-filter"><option value="">全部状态</option><option value="not_required">无需复核</option><option value="pending">待复核</option><option value="approved">已通过</option><option value="rejected">已退回</option></select></label>
+            <button class="button button-quiet" id="reset-filters" type="button">重置</button>
+          </div>
+          <div class="plan-summary" id="plan-summary" aria-live="polite">
+            <span><b id="plan-summary-total-plans">0</b> 个计划</span>
+            <span><b id="plan-summary-active-plans">0</b> 进行中</span>
+            <span><b id="plan-summary-closed-plans">0</b> 已关闭</span>
+            <span><b id="plan-summary-sites">0</b> 个点位</span>
+            <span><b id="plan-summary-completed-sites">0</b> 已完成点位</span>
+            <span><b id="plan-summary-exceptions">0</b> 项异常</span>
+            <span><b id="plan-summary-pending">0</b> 待复核</span>
+          </div>
+          <div class="plan-list" id="plan-list" aria-live="polite"></div>
+          <div class="empty-state hidden" id="plan-empty">没有匹配的巡检计划</div>
+        </div>
+
+        <div class="detail-panel" id="detail">
+          <div class="detail-empty" id="detail-empty">
+            <div class="empty-index">02</div>
+            <h2>选择一个计划</h2>
+            <p>从左侧台账打开现场记录。</p>
+          </div>
+          <div class="detail-content hidden" id="detail-content"></div>
+        </div>
+      </section>
+
+      <section class="observations-band" id="report">
+        <div class="band-heading">
+          <div><p class="section-kicker">03 / RECENT OBSERVATIONS</p><h2>最近观测</h2></div>
+          <div class="observation-summary" id="observation-summary" aria-live="polite">
+            <span class="summary-total"><b id="summary-total">0</b> 条记录</span>
+            <span class="summary-group"><i>等级</i><span>正常 <b id="summary-normal">0</b></span><span>轻微 <b id="summary-minor">0</b></span><span>较重 <b id="summary-major">0</b></span><span>严重 <b id="summary-critical">0</b></span></span>
+            <span class="summary-group"><i>复核</i><span>无需 <b id="summary-not-required">0</b></span><span>待复核 <b id="summary-pending">0</b></span><span>已通过 <b id="summary-approved">0</b></span><span>已退回 <b id="summary-rejected">0</b></span></span>
+          </div>
+        </div>
+        <div class="observation-table-wrap">
+          <table class="observation-table">
+            <thead><tr><th>点位</th><th>观测内容</th><th>等级</th><th>记录人</th><th>状态</th><th>时间</th></tr></thead>
+            <tbody id="observation-list"></tbody>
+          </table>
+          <div class="empty-state hidden" id="observation-empty">还没有观测记录</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog class="plan-dialog" id="plan-dialog">
+    <form method="dialog" class="dialog-form" id="plan-form">
+      <div class="dialog-heading"><div><p class="section-kicker" id="plan-dialog-kicker">NEW REGISTER</p><h2 id="plan-dialog-title">新建巡检计划</h2></div><button class="close-button" value="cancel" aria-label="关闭">×</button></div>
+      <div class="form-grid two-columns">
+        <label><span>计划名称</span><input name="name" required maxlength="80" placeholder="例：春季公园设施巡检"></label>
+        <label><span>巡检区域</span><input name="area" required maxlength="80" placeholder="例：华宁街道东片区"></label>
+        <label><span>计划日期</span><input name="scheduledDate" type="date" required></label>
+      </div>
+      <div class="sites-editor">
+        <div class="editor-heading"><div><span class="field-label">巡检点位</span><small>按现场路线排序</small></div><button class="button button-outline" id="add-site" type="button">＋ 添加点位</button></div>
+        <div id="site-rows"></div>
+      </div>
+      <div class="form-error hidden" id="plan-form-error" role="alert"></div>
+      <div class="dialog-actions"><button class="button button-quiet" value="cancel">取消</button><button class="button button-primary" id="submit-plan" value="default">创建并开始</button></div>
+    </form>
+  </dialog>
+
+  <div class="toast hidden" id="toast" role="status"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
