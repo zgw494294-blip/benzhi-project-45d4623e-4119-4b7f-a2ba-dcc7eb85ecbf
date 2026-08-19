@@ -469,22 +469,16 @@ func (f Filter) validate() error {
 }
 
 func planHasObservation(plan domain.InspectionPlan, filter Filter) bool {
-	severityMatched := filter.Severity == ""
-	reviewMatched := filter.ReviewStatus == ""
 	for _, site := range plan.Sites {
 		for _, observation := range site.Observations {
-			if observation.Severity == filter.Severity {
-				severityMatched = true
-			}
-			if observation.ReviewStatus == filter.ReviewStatus {
-				reviewMatched = true
-			}
+			severityMatched := filter.Severity == "" || observation.Severity == filter.Severity
+			reviewMatched := filter.ReviewStatus == "" || observation.ReviewStatus == filter.ReviewStatus
 			if severityMatched && reviewMatched {
 				return true
 			}
 		}
 	}
-	return severityMatched && reviewMatched
+	return false
 }
 
 func observationMatches(plan domain.InspectionPlan, site domain.InspectionSite, observation domain.Observation, query string) bool {
