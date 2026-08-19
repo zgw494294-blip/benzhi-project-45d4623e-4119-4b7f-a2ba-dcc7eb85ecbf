@@ -575,14 +575,17 @@ func (p InspectionPlan) Validate() error {
 	if len(p.SiteIDs) != len(p.Sites) || len(p.Sites) == 0 {
 		return fmt.Errorf("%w：计划点位集合无效", ErrSnapshotInvalid)
 	}
-	seen := make(map[string]bool, len(p.Sites))
+	sitePositions := make(map[string]int, len(p.Sites))
 	ordered := append([]InspectionSite(nil), p.Sites...)
 	sort.Slice(ordered, func(i, j int) bool { return ordered[i].Sequence < ordered[j].Sequence })
 	for i, site := range ordered {
-		if site.ID == "" || site.PlanID != p.ID || site.Sequence != i+1 || seen[site.ID] {
+		if site.ID == "" || site.PlanID != p.ID || site.Sequence != i+1 {
 			return fmt.Errorf("%w：点位顺序或归属无效", ErrSnapshotInvalid)
 		}
-		seen[site.ID] = true
+		if _, exists := sitePositions[site.ID]; exists {
+			return fmt.Errorf("%w：点位标识重复", ErrSnapshotInvalid)
+		}
+		sitePositions[site.ID] = i
 		if site.Status != SiteStatusPending && site.Status != SiteStatusInProgress && site.Status != SiteStatusCompleted {
 			return fmt.Errorf("%w：点位状态无效", ErrSnapshotInvalid)
 		}
@@ -598,8 +601,9 @@ func (p InspectionPlan) Validate() error {
 			}
 		}
 	}
-	for _, id := range p.SiteIDs {
-		if !seen[id] {
+	for i, id := range p.SiteIDs {
+		position, exists := sitePositions[id]
+		if !exists || position != i {
 			return fmt.Errorf("%w：计划点位索引无效", ErrSnapshotInvalid)
 		}
 	}
