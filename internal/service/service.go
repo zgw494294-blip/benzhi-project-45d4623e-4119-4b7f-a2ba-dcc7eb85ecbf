@@ -153,6 +153,9 @@ func New(repo store.Repository, config Config) (*Service, error) {
 }
 
 func (s *Service) CreatePlan(ctx context.Context, input CreatePlanInput) (domain.InspectionPlan, error) {
+	if err := checkContext(ctx); err != nil {
+		return domain.InspectionPlan{}, err
+	}
 	sites := make([]domain.InspectionSite, len(input.Sites))
 	for i, source := range input.Sites {
 		sites[i] = domain.InspectionSite{
@@ -240,6 +243,9 @@ func (s *Service) GetPlan(ctx context.Context, id string) (domain.InspectionPlan
 }
 
 func (s *Service) AddObservation(ctx context.Context, planID string, input ObservationInput) (domain.InspectionPlan, domain.Observation, error) {
+	if err := checkContext(ctx); err != nil {
+		return domain.InspectionPlan{}, domain.Observation{}, err
+	}
 	idempotencyKey := strings.TrimSpace(input.IdempotencyKey)
 	if idempotencyKey == "" {
 		idempotencyKey = s.newID("observation-key")
