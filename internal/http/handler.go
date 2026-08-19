@@ -7,6 +7,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"errors"
+	"io"
 	"mime"
 	"net/http"
 	"path"
@@ -425,9 +426,26 @@ type versionRequest struct {
 	ExpectedVersion int64 `json:"expectedVersion"`
 }
 
+const maxJSONBodySize = 1 << 20
+
 func decodeJSON(request *http.Request, target any) error {
-	decoder := json.NewDecoder(request.Body)
+	if request == nil || request.Body == nil {
+		return errors.New("请求 JSON 格式无效")
+	}
+	body, err := io.ReadAll(io.LimitReader(request.Body, maxJSONBodySize+1))
+	if err != nil || len(body) > maxJSONBodySize {
+		return errors.New("请求 JSON 格式无效")
+	}
+	if len(bytes.TrimSpace(body)) == 0 {
+		return errors.New("请求 JSON 格式无效")
+	}
+	decoder := json.NewDecoder(bytes.NewReader(body))
+	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(target); err != nil {
+		return errors.New("请求 JSON 格式无效")
+	}
+	var extra any
+	if err := decoder.Decode(&extra); err != io.EOF {
 		return errors.New("请求 JSON 格式无效")
 	}
 	return nil
