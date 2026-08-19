@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 	"time"
@@ -565,6 +566,30 @@ func validateReportCounts(report InspectionReport) error {
 	return nil
 }
 
+func validateReportSiteResults(sites []InspectionSite, results []SiteResult) error {
+	if len(results) != len(sites) {
+		return fmt.Errorf("%w：报告点位结果数量无效", ErrSnapshotInvalid)
+	}
+	for i, site := range sites {
+		result := results[i]
+		if result.SiteID != site.ID || result.Name != site.Name || result.Category != site.Category ||
+			result.Location != site.Location || result.Status != site.Status {
+			return fmt.Errorf("%w：报告点位结果与计划不一致", ErrSnapshotInvalid)
+		}
+		if len(site.Observations) == 0 {
+			if result.Observation != nil {
+				return fmt.Errorf("%w：报告观测结果无效", ErrSnapshotInvalid)
+			}
+			continue
+		}
+		expected := site.Observations[len(site.Observations)-1]
+		if !reflect.DeepEqual(result.Observation, &expected) {
+			return fmt.Errorf("%w：报告观测结果与计划不一致", ErrSnapshotInvalid)
+		}
+	}
+	return nil
+}
+
 func (p InspectionPlan) Validate() error {
 	if p.ID == "" || p.Name == "" || p.Area == "" || p.ScheduledDate == "" || p.Version < 1 || p.CreatedAt.IsZero() {
 		return fmt.Errorf("%w：计划快照缺少必填字段", ErrSnapshotInvalid)
@@ -608,6 +633,11 @@ func (p InspectionPlan) Validate() error {
 	}
 	if p.Report != nil && p.Report.PlanID != p.ID {
 		return fmt.Errorf("%w：报告归属无效", ErrSnapshotInvalid)
+	}
+	if p.Report != nil {
+		if err := validateReportSiteResults(p.Sites, p.Report.SiteResults); err != nil {
+			return err
+		}
 	}
 	if p.Report != nil && (p.Report.SeverityCounts != nil || p.Report.ReviewCounts != nil) {
 		if err := validateReportCounts(*p.Report); err != nil {
