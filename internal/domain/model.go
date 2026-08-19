@@ -565,6 +565,38 @@ func validateReportCounts(report InspectionReport) error {
 	return nil
 }
 
+func validateReportStatistics(plan InspectionPlan, report InspectionReport) error {
+	if err := validateReportCounts(report); err != nil {
+		return err
+	}
+	expectedSeverityCounts := newSeverityCounts()
+	expectedReviewCounts := newReviewCounts()
+	expectedExceptionCount := 0
+	for _, site := range plan.Sites {
+		for _, observation := range site.Observations {
+			expectedSeverityCounts[observation.Severity]++
+			expectedReviewCounts[observation.ReviewStatus]++
+			if observation.Severity != SeverityNormal {
+				expectedExceptionCount++
+			}
+		}
+	}
+	if report.ExceptionCount != expectedExceptionCount {
+		return fmt.Errorf("%w：报告异常总数与观测记录不一致", ErrSnapshotInvalid)
+	}
+	for severity, expected := range expectedSeverityCounts {
+		if report.SeverityCounts[severity] != expected {
+			return fmt.Errorf("%w：报告异常等级统计与观测记录不一致", ErrSnapshotInvalid)
+		}
+	}
+	for status, expected := range expectedReviewCounts {
+		if report.ReviewCounts[status] != expected {
+			return fmt.Errorf("%w：报告复核统计与观测记录不一致", ErrSnapshotInvalid)
+		}
+	}
+	return nil
+}
+
 func (p InspectionPlan) Validate() error {
 	if p.ID == "" || p.Name == "" || p.Area == "" || p.ScheduledDate == "" || p.Version < 1 || p.CreatedAt.IsZero() {
 		return fmt.Errorf("%w：计划快照缺少必填字段", ErrSnapshotInvalid)
@@ -609,8 +641,8 @@ func (p InspectionPlan) Validate() error {
 	if p.Report != nil && p.Report.PlanID != p.ID {
 		return fmt.Errorf("%w：报告归属无效", ErrSnapshotInvalid)
 	}
-	if p.Report != nil && (p.Report.SeverityCounts != nil || p.Report.ReviewCounts != nil) {
-		if err := validateReportCounts(*p.Report); err != nil {
+	if p.Report != nil {
+		if err := validateReportStatistics(p, *p.Report); err != nil {
 			return err
 		}
 	}
