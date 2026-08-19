@@ -204,8 +204,14 @@ func (s *Service) ListPlans(ctx context.Context, filter Filter) ([]domain.Inspec
 	if err != nil {
 		return nil, err
 	}
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	result := make([]domain.InspectionPlan, 0, len(snapshot.Plans))
 	for _, plan := range snapshot.Plans {
+		if err := checkContext(ctx); err != nil {
+			return nil, err
+		}
 		if filter.Date != "" && plan.ScheduledDate != filter.Date {
 			continue
 		}
@@ -228,6 +234,9 @@ func (s *Service) ListPlans(ctx context.Context, filter Filter) ([]domain.Inspec
 			continue
 		}
 		result = append(result, plan)
+	}
+	if err := checkContext(ctx); err != nil {
+		return nil, err
 	}
 	return result, nil
 }
@@ -328,6 +337,9 @@ func (s *Service) GetReport(ctx context.Context, planID string) (domain.Inspecti
 }
 
 func (s *Service) ListObservations(ctx context.Context, filter Filter) ([]ObservationRecord, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	filter = normalizeFilter(filter)
 	if err := filter.validate(); err != nil {
 		return nil, err
@@ -338,14 +350,26 @@ func (s *Service) ListObservations(ctx context.Context, filter Filter) ([]Observ
 	if err != nil {
 		return nil, err
 	}
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 	result := make([]ObservationRecord, 0)
 	query := strings.ToLower(strings.TrimSpace(filter.Query))
 	for _, plan := range plans {
+		if err := checkContext(ctx); err != nil {
+			return nil, err
+		}
 		for _, site := range plan.Sites {
+			if err := checkContext(ctx); err != nil {
+				return nil, err
+			}
 			if filter.Category != "" && strings.ToLower(site.Category) != strings.ToLower(strings.TrimSpace(filter.Category)) {
 				continue
 			}
 			for _, observation := range site.Observations {
+				if err := checkContext(ctx); err != nil {
+					return nil, err
+				}
 				if filter.Severity != "" && observation.Severity != filter.Severity {
 					continue
 				}
@@ -358,6 +382,9 @@ func (s *Service) ListObservations(ctx context.Context, filter Filter) ([]Observ
 				result = append(result, ObservationRecord{PlanID: plan.ID, PlanName: plan.Name, ScheduledDate: plan.ScheduledDate, Site: site, Observation: observation})
 			}
 		}
+	}
+	if err := checkContext(ctx); err != nil {
+		return nil, err
 	}
 	return result, nil
 }
